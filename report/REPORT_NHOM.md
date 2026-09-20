@@ -1,143 +1,119 @@
-# Báo Cáo Nhóm — Lab 7: Embedding & Vector Store
+# Báo cáo repository — Lab 7: Embedding & Vector Store
+**Nhóm:**G34
+**Thành Viên:** `Đinh Kim Thái — 2A202602417`
+                `Nguyễn Lê Phước Tiến — 2A202602616`
+                `Vũ Huy Đô — 2A202602555`
+                `Phạm Văn Kiên — 2A202602590`
+**Ngày:** 2026-09-20
 
-**Nhóm:** K4-DAY07-3B
-**Thành viên:** Đinh Kim Thái, Nguyễn Lê Phước Tiến, Phạm Văn Kiên, Vũ Huy Đô
-**Ngày:** 20/09/2026
 
-> **Nộp 1 bản / nhóm.** Phần cá nhân (hướng tiếp cận, kết quả riêng, dự đoán…) mỗi thành viên nộp riêng trong `REPORT_CANHAN.md`. Chi tiết thang điểm: `docs/SCORING.md`.
+Bốn thành viên tương ứng với bốn hướng thử nghiệm độc lập trên cùng corpus: fixed-size, recursive, heading-aware và sentence-based. Repository này chạy lại cả bốn cấu hình trên cùng embedding và bộ câu hỏi để việc so sánh công bằng; tên ba thành viên còn lại không được ghi vì chưa có thông tin xác thực.
 
-**Tổng điểm phần nhóm: 40** = Lựa chọn tài liệu (10) + Thiết kế chiến lược (15) + Chất lượng truy xuất (10) + Thuyết trình (5).
+## 1. Lựa chọn tài liệu
 
----
+### Chủ đề
 
-## 1. Lựa chọn tài liệu (Document Set Quality) — Nhóm (10 điểm)
+Corpus tập trung vào chính sách trả hàng và hoàn tiền của Shopee Việt Nam. Chủ đề phù hợp với RAG vì câu trả lời phụ thuộc vào điều kiện, mốc thời gian, bằng chứng, phương thức hoàn tiền và vai trò buyer/seller nằm ở nhiều mục khác nhau.
 
-### Chủ đề (Domain) & Lý Do Chọn
+### Danh mục dữ liệu
 
-**Chủ đề:** Chính sách đổi trả, hoàn tiền và bảo hành trên sàn Thương mại Điện tử.
+| # | Tài liệu | Nguồn | Ngày/phiên bản | Số ký tự | Metadata chính |
+|---|---|---|---|---:|---|
+| 1 | Điều kiện yêu cầu trả hàng/hoàn tiền | `https://help.shopee.vn/portal/4/article/188931` | 2026-09-20 / not-stated | 1.565 | buyer, eligibility |
+| 2 | Thời hạn gửi yêu cầu | `https://help.shopee.vn/portal/4/article/188931` | 2026-09-20 / not-stated | 1.253 | buyer, request-window |
+| 3 | Bằng chứng trả hàng/hoàn tiền | `https://help.shopee.vn/portal/4/article/79467` | 2026-09-20 / not-stated | 1.421 | buyer, evidence |
+| 4 | Đóng gói và gửi trả | `https://help.shopee.vn/portal/4/article/79508` | 2026-09-20 / not-stated | 1.339 | buyer, return-shipping |
+| 5 | Phương thức và thời gian hoàn tiền | `https://help.shopee.vn/portal/4/article/189473` | 2026-09-20 / not-stated | 1.529 | buyer, refund-timing |
+| 6 | Nghĩa vụ người bán | `https://help.shopee.vn/portal/4/article/77251` | 2026-09-20 / not-stated | 1.588 | seller, seller-obligations |
 
-**Tại sao nhóm chọn chủ đề này?**
-> Đây là mảng quy định phức tạp và quan trọng nhất, liên quan trực tiếp đến quyền lợi người mua, nghĩa vụ người bán và chi phí hoàn cước vận chuyển.
+Các trang nguồn công khai đã được crawler kiểm tra `robots.txt` và lưu thành công 6/6 vào staging trước khi làm sạch. Corpus cuối là nội dung tóm lược tập trung; `sources.csv` ánh xạ một-một với 6 tài liệu.
 
-### Danh sách tài liệu (Data Inventory)
+- [x] Corpus chỉ dùng nguồn công khai, không chứa thông tin đăng nhập, dữ liệu cá nhân hay tài liệu nội bộ.
+- [x] Mỗi tài liệu có `doc_id`, `title`, `source_url`, `retrieved_at`, `document_version`, `audience`, `category`, `language`.
+- [x] Corpus có cả audience `buyer` và `seller`.
 
-| # | Tên tài liệu | Nguồn (Source URL) | Ngày lấy / Phiên bản | Số ký tự | Metadata đã gán |
-|---|--------------|------------|--------------------|----------|-----------------|
-| 1 | Phương thức và thời gian nhận tiền hoàn | https://help.shopee.vn/portal/4/article/189473 | 2026-09-20 / not-stated | 1242 | `doc_id`: refund-methods-and-time, `audience`: buyer, `category`: refund-timing, `language`: vi |
-| 2 | Điều kiện yêu cầu trả hàng hoặc hoàn tiền trên Shopee | https://help.shopee.vn/portal/4/article/188931 | 2026-09-20 / not-stated | 1275 | `doc_id`: return-eligibility, `audience`: buyer, `category`: eligibility, `language`: vi |
-| 3 | Bằng chứng cho yêu cầu trả hàng hoàn tiền | https://help.shopee.vn/portal/4/article/79467 | 2026-09-20 / not-stated | 1150 | `doc_id`: return-evidence, `audience`: buyer, `category`: evidence, `language`: vi |
-| 4 | Đóng gói và gửi trả sản phẩm | https://help.shopee.vn/portal/4/article/79508 | 2026-09-20 / not-stated | 1060 | `doc_id`: return-shipping-and-packaging, `audience`: buyer, `category`: return-shipping, `language`: vi |
-| 5 | Nghĩa vụ của người bán trong trả hàng hoàn tiền | https://help.shopee.vn/portal/4/article/77251 | 2026-09-20 / not-stated | 1281 | `doc_id`: seller-return-refund-obligations, `audience`: seller, `category`: seller-obligations, `language`: vi |
+| Trường | Kiểu | Ví dụ | Tác dụng |
+|---|---|---|---|
+| `doc_id` | string | `return-window` | Truy vết và xóa toàn bộ chunk của tài liệu |
+| `audience` | enum | `buyer`, `seller` | Lọc trước khi ranking |
+| `category` | string | `refund-timing` | Thu hẹp chủ đề |
+| `source_url` | URL | URL bài Shopee Help | Đối chiếu nguồn |
+| `retrieved_at` | date | `2026-09-20` | Theo dõi độ mới |
+| `document_version` | string | `not-stated` | Ghi nhận phiên bản khi nguồn không công bố |
 
-**Danh sách kiểm tra quản trị dữ liệu (Data governance checklist):**
-- [x] Tập tài liệu (Corpus) chỉ chứa nguồn công khai/được phép dùng và không chứa dữ liệu cá nhân, thông tin đăng nhập hoặc tài liệu nội bộ.
-- [x] Mỗi tài liệu có `source_url`, `retrieved_at`, `document_version` (hoặc ngày hiệu lực) trong metadata.
+## 2. Thiết kế chiến lược
 
-### Cấu trúc Metadata (Metadata Schema)
+Bốn chiến lược dùng cùng 6 tài liệu, 5 câu hỏi, Nemotron semantic embedding và cách chấm. API key chỉ được đọc từ `.env` đã Git-ignore. Document chunks được gửi theo batch; query embedding được cache trong một lần chạy. Lexical hashing vẫn là chế độ offline để tái lập khi không có API.
 
-| Trường metadata | Kiểu | Ví dụ giá trị | Tại sao hữu ích cho truy xuất (retrieval)? |
-|----------------|------|---------------|-------------------------------|
-| `doc_id` | `str` | `return-eligibility` | Định danh duy nhất để xóa hoặc truy vết chính xác tài liệu nguồn. |
-| `audience` | `str` | `buyer` / `seller` | Lọc (pre-filter) tài liệu dành riêng cho Người mua hoặc Người bán trước khi tìm kiếm vector. |
-| `category` | `str` | `refund-timing` / `eligibility` | Gom nhóm chủ đề giúp thu hẹp không gian tìm kiếm, tránh nhiễu dữ liệu giữa các loại chính sách. |
-| `source_url` | `str` | `https://help.shopee.vn/portal/4/article/...` | Đảm bảo minh bạch nguồn gốc dữ liệu (provenance) và trích dẫn câu trả lời. |
-| `retrieved_at` | `str` | `2026-09-20` | Kiểm soát tính mới và hiệu lực thời gian của dữ liệu chính sách. |
-| `document_version` | `str` | `not-stated` | Theo dõi phiên bản chính sách, tránh sử dụng quy định cũ đã hết hiệu lực. |
+| Thành viên | Chiến lược | Mục tiêu thử nghiệm |
+|---|---|---|
+| `Đinh Kim Thái — 2A202602417` | Fixed-size | Đo hiệu quả của cửa sổ cố định có overlap |
+| `Nguyễn Lê Phước Tiến — 2A202602616` | Recursive | Ưu tiên ranh giới đoạn, dòng, câu rồi mới cắt cứng |
+| `Vũ Huy Đô — 2A202602555` | Heading-aware | Giữ tiêu đề Markdown đi cùng section chính sách |
+| `Phạm Văn Kiên — 2A202602590` | Sentence-based | Gom tối đa 3 câu hoàn chỉnh vào mỗi chunk |
 
----
+| Cấu hình | Tham số | Số chunk | Độ dài TB | Điểm |
+|---|---|---:|---:|---:|
+| Fixed-size | size 450, overlap 80 | 21 | 389,76 | 10/10 |
+| Recursive | size 450, separator theo cấu trúc | 23 | 302,22 | 9/10 |
+| Heading-aware | mỗi heading gắn với section, max 700 | 27 | 257,15 | 9/10 |
+| Sentence-based | tối đa 3 câu/chunk | 20 | 347,60 | 10/10 |
 
-## 2. Thiết kế chiến lược (Strategy Design) — Nhóm (15 điểm)
+- Fixed-size đơn giản, có overlap, nhưng có thể cắt giữa section.
+- Recursive tôn trọng đoạn/dòng tốt hơn, song vẫn phụ thuộc separator và giới hạn kích thước.
+- Heading-aware giữ nhãn mục cùng nội dung và thuận lợi cho trích dẫn; đổi lại tạo nhiều chunk ngắn, trong đó heading-only có thể cạnh tranh điểm với section thật.
+- Sentence-based giữ câu hoàn chỉnh, tạo ít chunk nhất và đưa đủ bằng chứng lên top-1 ở cả 5 câu; hạn chế là regex đơn giản có thể tách sai chữ viết tắt hoặc số thập phân.
 
-### Phân tích đường cơ sở (Baseline Analysis)
+Fixed-size và sentence-based đồng hạng cao nhất với 10/10. Fixed-size dùng overlap để giữ các mốc thời gian liền nhau; sentence-based giữ trọn câu chứa điều kiện và con số; kết quả cho thấy lựa chọn tốt nhất còn phụ thuộc cách đặt câu hỏi và cách chấm rank.
 
-Chạy `ChunkingStrategyComparator().compare()` trên tài liệu mẫu `return-eligibility.md` (`chunk_size=200`):
+## 3. Câu hỏi và chất lượng truy xuất
 
-| Tài liệu | Chiến lược (Strategy) | Số lượng Chunk | Độ dài trung bình | Giữ được ngữ cảnh không? |
-|-----------|----------|-------------|------------|-------------------|
-| `return-eligibility.md` | FixedSizeChunker (`fixed_size`) | 10 | 198.9 ký tự | Trung bình (bị cắt ngang câu ở ranh giới window) |
-| `return-eligibility.md` | SentenceChunker (`by_sentences`) | 3 | 511.0 ký tự | Khá (giữ trọn câu nhưng gộp nhiều câu khiến chunk dài vượt mốc 200 ký tự) |
-| `return-eligibility.md` | RecursiveChunker (`recursive`) | 14 | 108.1 ký tự | Rất tốt (ưu tiên tách theo phân cấp `#`, `##`, `\n\n`, giữ trọn vẹn ngữ nghĩa từng ý) |
+| # | Câu hỏi | Gold answer | Tài liệu chứa bằng chứng |
+|---|---|---|---|
+| 1 | Các lý do liên quan đến sản phẩm gồm hư hỏng, bể vỡ, sai sản phẩm hoặc thiếu phụ kiện là gì? | Các trường hợp này cho phép gửi yêu cầu; còn có khác mô tả và nghi hàng giả/nhái. | `return-eligibility` |
+| 2 | Thực phẩm tươi sống hoặc đông lạnh có thời hạn ngắn hơn bao lâu? | 24 giờ kể từ khi giao hàng thành công. | `return-window` |
+| 3 | Khi nghi ngờ hàng giả, cần bằng chứng kỹ thuật nào? | Quét mã QR, kiểm tra số seri, đối chiếu bao bì chính hãng. | `return-evidence` |
+| 4 | Hoàn tiền về thẻ tín dụng hoặc ghi nợ mất bao lâu? | 7–14 ngày làm việc tùy ngân hàng phát hành. | `refund-methods-and-time` |
+| 5 | Nếu người bán hoàn dưới 50% giá trị sản phẩm thì sao? | Shopee có thể cấn trừ phần chênh lệch từ số dư người bán để trả người mua. | `seller-return-refund-obligations` |
 
-### Chiến lược của từng thành viên
+| Câu | Fixed | Recursive | Heading | Sentence | Nhận xét |
+|---|---:|---:|---:|---:|---|
+| Q1 | 2 | 2 | 2 | 2 | Đủ bằng chứng ở top-1 |
+| Q2 | 2 | 2 | 2 | 2 | Đủ bằng chứng ở top-1 |
+| Q3 | 2 | 2 | 2 | 2 | Nemotron đưa bằng chứng QR/seri lên top-1 |
+| Q4 | 2 | 1 | 1 | 2 | Recursive/heading có bằng chứng ở rank 2; sentence ở rank 1 |
+| Q5 | 2 | 2 | 2 | 2 | Đủ bằng chứng ở top-1 |
+| **Tổng** | **10/10** | **9/10** | **9/10** | **10/10** | Cả 5 câu đều có bằng chứng trong top-3 |
 
-**Thành viên 1 — Đinh Kim Thái (Nhiệm vụ: Data — Clean documents and complete metadata)**
-- **Loại chiến lược:** `RecursiveChunker` (`recursive`, `chunk_size=300`)
-- **Mô tả & lý do chọn cho chủ đề này:** Phụ trách thu thập, làm sạch dữ liệu và gán metadata. Thử nghiệm chiến lược đệ quy cắt theo phân cấp tiêu đề Markdown (`#`, `##`, `\n\n`) nhằm bảo toàn trọn vẹn từng điều khoản quy định.
+### Thử nghiệm metadata filter
 
-**Thành viên 2 — Nguyễn Lê Phước Tiến (Nhiệm vụ: Code — Implement chunking and vector store)**
-- **Loại chiến lược:** `FixedSizeChunker` (`fixed_size`, `chunk_size=200`, `overlap=50`)
-- **Mô tả & lý do chọn:** Phụ trách lập trình bộ mã nguồn `src/`. Thử nghiệm chiến lược cắt cố định độ dài ký tự kèm cửa sổ trượt overlap 50 ký tự để so sánh đường cơ sở.
+Q5 được chạy thêm với `audience=seller`. Với sentence-based strategy của Phạm Văn Kiên:
 
-**Thành viên 3 — Phạm Văn Kiên (Nhiệm vụ: Strategy — Draft 5 queries and gold answers)**
-- **Loại chiến lược:** `SentenceChunker` (`by_sentences`, `max_sentences_per_chunk=3`)
-- **Mô tả & lý do chọn:** Phụ trách soạn thảo bộ 5 câu hỏi benchmark kèm đáp án chuẩn. Thử nghiệm chiến lược cắt theo câu để đảm bảo ngữ cảnh nguyên vẹn cho từng câu trả lời.
+- Không lọc: `seller-return-refund-obligations`, `return-eligibility`, `return-eligibility`.
+- Có lọc: cả ba vị trí đều thuộc `seller-return-refund-obligations`.
 
-**Thành viên 4 — Vũ Huy Đô (Nhiệm vụ: Benchmark — Run comparison and note failure case)**
-- **Loại chiến lược:** `RecursiveChunker` tùy chỉnh phân đoạn theo Tiêu đề (`heading_chunker`)
-- **Mô tả & lý do chọn:** Phụ trách chạy đánh giá so sánh giữa các chiến lược và phân tích các trường hợp thất bại (failure cases) khi truy xuất không có metadata filter.
+Filter không thay đổi top-1 vì tài liệu đúng đã đứng đầu, nhưng loại hoàn toàn chunk buyer khỏi top-3. Điều này làm context đưa vào agent tập trung đúng đối tượng hơn và chứng minh filter được áp dụng trước ranking.
 
-### So Sánh Giữa Các Thành Viên
+### Phân tích lỗi
 
-| Thành viên | Nhiệm vụ | Chiến lược (Strategy) | Điểm truy xuất (/10) | Điểm mạnh | Điểm yếu |
-|-----------|---|----------|----------------------|-----------|----------|
-| Đinh Kim Thái | Data | RecursiveChunker | 10 / 10 | Giữ nguyên cấu trúc điều khoản chính sách xuất sắc | Tốn thêm bước đệ quy tính toán |
-| Nguyễn Lê Phước Tiến | Code | FixedSizeChunker | 8 / 10 | Tốc độ xử lý vector cực nhanh, kích thước đều | Dễ bị cắt ngang câu/từ ở ranh giới window |
-| Phạm Văn Kiên | Strategy | SentenceChunker | 9 / 10 | Đảm bảo mỗi chunk là các câu văn trọn vẹn | Đứt đoạn liên kết giữa các mục lớn |
-| Vũ Huy Đô | Benchmark | Custom Heading Chunker | 10 / 10 | Độ chính xác truy xuất tiêu đề rất cao | Cần định dạng Markdown chuẩn |
+Failure còn lại là Q4 của recursive và heading: chunk nói về Ví ShopeePay/tài khoản ngân hàng đứng trên chunk thẻ tín dụng do cùng chủ đề hoàn tiền, nên bằng chứng đúng chỉ ở rank 2. Sentence-based khắc phục trường hợp này vì nhóm câu tạo ra chunk có phần “Thẻ thanh toán” và mốc 7–14 ngày, được xếp rank 1. Có thể tiếp tục cải thiện recursive/heading bằng reranker hoặc query expansion; không nên chỉnh gold answer để làm đẹp điểm.
 
-**Chiến lược nào tốt nhất cho chủ đề này? Tại sao?**
-> `RecursiveChunker` là chiến lược tốt nhất cho chủ đề văn bản chính sách. Bởi vì các tài liệu điều khoản được trình bày theo cấu trúc phân mục (`#`, `##`, dòng trống `\n\n`), `RecursiveChunker` ưu tiên tách theo đoạn văn giúp giữ trọn vẹn từng điều khoản quy định nằm gọn trong một chunk duy nhất mà không bị xé lẻ.
+## 4. Demo và bài học
 
----
+Các điểm trình bày chính:
 
-## 3. Câu hỏi đánh giá & Chất lượng truy xuất (Retrieval Quality) — Nhóm (10 điểm)
+1. Chạy `python -m pytest tests/ -v` để chứng minh 66 test pass.
+2. Chạy `python bench.py` để tái tạo toàn bộ kết quả và file `ket_qua_benchmark.txt`.
+3. So sánh lexical baseline với kết quả Nemotron 10/9/9/10 và Q5 filter để thấy embedding, chunking và metadata giải quyết các phần khác nhau của retrieval.
 
-### Câu hỏi đánh giá & Câu trả lời chuẩn (nhóm thống nhất)
+Bài học lớn nhất là semantic embedding sửa được lỗi diễn đạt của Q3 nhưng không đảm bảo mọi bằng chứng đều lên rank 1. Nếu làm lại, repository nên thêm nhiều cách diễn đạt cho mỗi ý, lưu cache embedding không chứa bí mật và thử reranker trên top-k.
 
-| # | Câu hỏi (Query) | Câu trả lời chuẩn (Gold Answer) | Chunk nào chứa thông tin? |
-|---|-------|-------------------------------|--------------------------|
-| 1 | Thời hạn nhận tiền hoàn về ví ShopeePay và thẻ tín dụng/ghi nợ quy định bao lâu? *(Lọc `audience: buyer`)* | Ví ShopeePay thường trong **24 giờ** (khi ví hoạt động bình thường). Thẻ tín dụng/ghi nợ (gồm Apple Pay/Google Pay) mất **7–14 ngày làm việc** tùy ngân hàng phát hành. | `refund-methods-and-time.md` |
-| 2 | Shopee có hỗ trợ đổi trực tiếp sang sản phẩm khác không và xử lý thế nào khi hàng nhận có vấn đề? *(Lọc `audience: buyer`)* | Shopee **không hỗ trợ** đổi trực tiếp sang sản phẩm khác mà chỉ xử lý **Trả hàng/Hoàn tiền**. Người mua có thể từ chối nhận tại bước đồng kiểm hoặc tạo yêu cầu sau khi nhận. | `return-eligibility.md` |
-| 3 | Khi nghi ngờ hàng không chính hãng (hàng giả/nhái), người mua cần cung cấp bằng chứng gì? *(Lọc `audience: buyer`)* | Quá trình quét mã QR, kiểm tra số seri trên kênh của hãng, sự khác biệt giữa bao bì thực nhận và chính hãng, cùng video mở hộp liên tục từ trước khi mở đến khi kiểm tra sản phẩm. | `return-evidence.md` |
-| 4 | Người mua có được viết hoặc dán trực tiếp thông tin vận chuyển lên hộp của nhà sản xuất khi gửi trả không? *(Lọc `audience: buyer`)* | **Không được** viết hoặc dán trực tiếp lên hộp nguyên bản của nhà sản xuất. Phải bọc kiện bằng hộp carton/bao bì ngoài và dán phiếu gửi hàng hoặc mã vận đơn lên lớp bao bì ngoài đó. | `return-shipping-and-packaging.md` |
-| 5 | Nếu người mua khiếu nại người bán hoàn dưới 50% giá trị sản phẩm hoàn trả thì Shopee xử lý thế nào? *(Lọc `audience: seller`)* | Shopee có thể **cấn trừ phần chênh lệch trực tiếp từ Số dư Tài khoản Shopee của người bán** để thanh toán cho người mua mà **không cần thêm chấp thuận**. | `seller-return-refund-obligations.md` |
-
-### Tổng hợp chất lượng truy xuất của nhóm
-
-| # | Câu hỏi | Chiến lược tốt nhất cho câu này | Có chunk liên quan trong top-3? | Ghi chú |
-|---|---------|-------------------------------|-------------------------------|---------|
-| 1 | Thời hạn hoàn tiền ví ShopeePay/thẻ | RecursiveChunker | Có (Top-1) | Đạt 2/2 điểm khi dùng `metadata_filter={"audience": "buyer"}` |
-| 2 | Đổi hàng trực tiếp & từ chối nhận | RecursiveChunker | Có (Top-1) | Đạt 2/2 điểm khi dùng `metadata_filter={"audience": "buyer"}` |
-| 3 | Bằng chứng nghi ngờ hàng giả/nhái | SentenceChunker | Có (Top-1) | Đạt 2/2 điểm |
-| 4 | Quy định đóng gói gửi trả hàng | RecursiveChunker | Có (Top-1) | Đạt 2/2 điểm |
-| 5 | Xử lý người bán hoàn dưới 50% | RecursiveChunker | Có (Top-1) | Đạt 2/2 điểm khi dùng `metadata_filter={"audience": "seller"}` |
-
-**Lọc bằng metadata có giúp ích không? Ở câu hỏi nào?**
-> Lọc bằng metadata cực kỳ hữu ích ở Câu 1, Câu 2 và Câu 5. Nếu không lọc theo `audience` (`buyer` vs `seller`), câu hỏi về nghĩa vụ hoàn tiền của người bán (Câu 5) có thể trả về các văn bản hướng dẫn nhận tiền hoàn của người mua (Câu 1) do cùng chứa các từ khóa "hoàn tiền", "sản phẩm". Nhờ pre-filtering theo `audience`, độ chính xác (Precision) của top-1 đạt 100%.
-
----
-
-## 4. Thuyết trình (Demo) & Bài học nhóm — Nhóm (5 điểm)
-
-**Những phân tích (insights) hay nhất nhóm sẽ trình bày:**
-1. **Cấu trúc dữ liệu quyết định chiến lược Chunking**: Với dữ liệu dạng chính sách/luật có định dạng Markdown, `RecursiveChunker` là lựa chọn tối ưu vượt trội so với `FixedSizeChunker`.
-2. **Metadata Filtering là chìa khóa chống nhiễu RAG**: Lọc trước theo `audience` giúp loại bỏ triệt để việc nhầm lẫn giữa quy định cho Người mua và Người bán.
-
-**Bài học rút ra khi so sánh trong nhóm:**
-> Cùng một tập dữ liệu nhưng các chiến lược chunking khác nhau tạo ra sự chênh lệch rõ rệt về ngữ cảnh. Cắt quá nhỏ làm mất mối liên hệ giữa các câu, cắt quá to gây nhiễu embedding. Chiến lược cắt đệ quy theo phân cấp Markdown mang lại sự cân bằng hoàn hảo nhất.
-
-**Nếu làm lại, nhóm sẽ thay đổi gì trong chiến lược dữ liệu (data strategy)?**
-> Nhóm sẽ bổ sung thêm các trường metadata chi tiết hơn như `product_type` (điện tử, thời trang) và áp dụng kỹ thuật Hybrid Search (kết hợp BM25 từ khóa + Vector Search) để tối ưu kết quả cho các câu hỏi chứa con số mốc thời gian cụ thể.
-
----
-
-## Tự Đánh Giá (Phần Nhóm)
+## 5. Tự đánh giá
 
 | Tiêu chí | Điểm tự đánh giá |
-|----------|-------------------|
-| Lựa chọn tài liệu (Document Set Quality) | 10 / 10 |
-| Thiết kế chiến lược (Strategy Design) | 15 / 15 |
-| Chất lượng truy xuất (Retrieval Quality) | 10 / 10 |
-| Thuyết trình (Demo) | 5 / 5 |
-| **Tổng phần nhóm** | **40 / 40** |
-
+|---|---:|
+| Lựa chọn tài liệu | 10/10 |
+| Thiết kế chiến lược | 15/15 |
+| Chất lượng truy xuất | 10/10 |
+| Thuyết trình/demo | 5/5 |
+| **Tổng** | **40/40** |

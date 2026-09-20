@@ -1,0 +1,87 @@
+======================================================================
+KẾT QUẢ BENCHMARK TRUY XUẤT RAG — LAB 07
+Sinh viên: Đinh Kim Thái — MSSV: 2A202602417 — Nhóm: G34
+Chiến lược: FixedSizeChunker (chunk_size=450, overlap=80)
+======================================================================
+
+[1] Đã nạp và phân đoạn corpus: 22 chunks từ data\ecommerce
+[2] Đã nhúng và lưu trữ vào EmbeddingStore (Size: 22)
+
+======================================================================
+CHẠY 5 BENCHMARK QUERIES CỦA NHÓM:
+======================================================================
+
+--- Q1: Các lý do liên quan đến sản phẩm gồm hư hỏng, bể vỡ, sai sản phẩm hoặc thiếu phụ kiện là gì? ---
+Tài liệu chuẩn (Gold): return-eligibility
+Top-3 Kết quả truy xuất:
+  Rank 1: doc_id=return-shipping-and-packaging (score=0.2330)
+         Preview: "hopee cung cấp lên lớp bao bì vận chuyển. Mã vận đơn được xem trong mục Trả hàng/Hoàn tiền của đơn l..."
+  Rank 2: doc_id=refund-methods-and-time (score=0.1653)
+         Preview: "**, tùy ngân hàng phát hành.  ## SPayLater  Khoản hoàn liên quan đến SPayLater có thể được cập nhật ..."
+  Rank 3: doc_id=return-window (score=0.1173)
+         Preview: "# Thời hạn gửi yêu cầu trả hàng hoàn tiền  ## Quy định thời hạn chung  Người mua cần gửi yêu cầu Trả..."
+-> Điểm đánh giá câu Q1: 0/2 điểm
+
+--- Q2: Thực phẩm tươi sống hoặc đông lạnh có thời hạn ngắn hơn bao lâu? ---
+Tài liệu chuẩn (Gold): return-window
+Top-3 Kết quả truy xuất:
+  Rank 1: doc_id=seller-return-refund-obligations (score=0.1236)
+         Preview: "phẩm hoàn trả cần được đối chiếu với tình trạng ban đầu, phụ kiện đi kèm, hóa đơn thuế, tem hoặc phi..."
+  Rank 2: doc_id=return-window (score=0.1177) [CHÍNH XÁC]
+         Preview: ", người mua cần gửi yêu cầu trước khi thời hạn bảo hộ Shopee kết thúc.  ## Lưu ý về việc xác nhận đơ..."
+  Rank 3: doc_id=return-window (score=0.0907) [CHÍNH XÁC]
+         Preview: "khi đơn hàng được giao thành công. - **Hàng hóa có hạn sử dụng ngắn hoặc cây cảnh tươi**: Người mua ..."
+-> Điểm đánh giá câu Q2: 1/2 điểm
+
+--- Q3: Khi nghi ngờ hàng giả, cần bằng chứng kỹ thuật nào? ---
+Tài liệu chuẩn (Gold): return-evidence
+Top-3 Kết quả truy xuất:
+  Rank 1: doc_id=return-evidence (score=0.1982) [CHÍNH XÁC]
+         Preview: "hận và bao bì chính hãng. Video mở hộp liên tục giúp chứng minh tình trạng kiện hàng từ trước khi mở..."
+  Rank 2: doc_id=return-shipping-and-packaging (score=0.1882)
+         Preview: "# Đóng gói và gửi trả sản phẩm  ## Thành phần phải hoàn trả  Người mua cần hoàn trả sản phẩm cùng hộ..."
+  Rank 3: doc_id=return-evidence (score=0.1322) [CHÍNH XÁC]
+         Preview: "# Chuẩn bị bằng chứng  ## Mục đích  Bằng chứng đầy đủ và rõ ràng giúp Shopee đối chiếu tình trạng th..."
+-> Điểm đánh giá câu Q3: 2/2 điểm
+
+--- Q4: Hoàn tiền về thẻ tín dụng hoặc ghi nợ mất bao lâu? ---
+Tài liệu chuẩn (Gold): refund-methods-and-time
+Top-3 Kết quả truy xuất:
+  Rank 1: doc_id=refund-methods-and-time (score=0.3484) [CHÍNH XÁC]
+         Preview: "**, tùy ngân hàng phát hành.  ## SPayLater  Khoản hoàn liên quan đến SPayLater có thể được cập nhật ..."
+  Rank 2: doc_id=return-shipping-and-packaging (score=0.1909)
+         Preview: "# Đóng gói và gửi trả sản phẩm  ## Thành phần phải hoàn trả  Người mua cần hoàn trả sản phẩm cùng hộ..."
+  Rank 3: doc_id=return-window (score=0.1788)
+         Preview: "khi đơn hàng được giao thành công. - **Hàng hóa có hạn sử dụng ngắn hoặc cây cảnh tươi**: Người mua ..."
+-> Điểm đánh giá câu Q4: 2/2 điểm
+
+--- Q5: Nếu người bán hoàn dưới 50% giá trị sản phẩm thì sao? ---
+Tài liệu chuẩn (Gold): seller-return-refund-obligations
+Bộ lọc (Metadata Filter): {'audience': 'seller'}
+Top-3 Kết quả truy xuất:
+  Rank 1: doc_id=seller-return-refund-obligations (score=0.1526) [CHÍNH XÁC]
+         Preview: "oàn theo cơ chế quy định. Người bán cần sử dụng đúng địa chỉ trả hàng và theo dõi tiến trình trên hệ..."
+  Rank 2: doc_id=seller-return-refund-obligations (score=0.0513) [CHÍNH XÁC]
+         Preview: "# Nghĩa vụ của người bán  ## Phối hợp giải quyết yêu cầu  Người bán cần phối hợp cung cấp thông tin ..."
+  Rank 3: doc_id=seller-return-refund-obligations (score=-0.0896) [CHÍNH XÁC]
+         Preview: "phẩm hoàn trả cần được đối chiếu với tình trạng ban đầu, phụ kiện đi kèm, hóa đơn thuế, tem hoặc phi..."
+-> Điểm đánh giá câu Q5: 2/2 điểm
+
+======================================================================
+TỔNG ĐIỂM TRUY XUẤT: 7/10 ĐIỂM
+======================================================================
+
+[3] THỬ NGHIỆM A/B METADATA FILTER (Q5):
+Câu hỏi: Nếu người bán hoàn dưới 50% giá trị sản phẩm thì sao?
+  A) Không có filter (audience=both/all):
+     Rank 1: return-window (audience: buyer, score: 0.2399)
+     Rank 2: return-shipping-and-packaging (audience: buyer, score: 0.2173)
+     Rank 3: refund-methods-and-time (audience: buyer, score: 0.2167)
+  B) Có filter (audience=seller):
+     Rank 1: seller-return-refund-obligations (audience: seller, score: 0.1526)
+     Rank 2: seller-return-refund-obligations (audience: seller, score: 0.0513)
+     Rank 3: seller-return-refund-obligations (audience: seller, score: -0.0896)
+
+Kết luận A/B: Khi lọc audience=seller, toàn bộ các chunk của buyer bị loại bỏ trước khi ranking,
+đảm bảo context nạp vào LLM tập trung 100% vào nghĩa vụ người bán.
+======================================================================

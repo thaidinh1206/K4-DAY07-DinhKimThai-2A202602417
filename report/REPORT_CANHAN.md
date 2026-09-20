@@ -1,7 +1,7 @@
 # Báo Cáo Cá Nhân — Lab 7: Embedding & Vector Store
 
 **Họ tên:** Đinh Kim Thái
-**Nhóm:** K4-DAY07-3B
+**Nhóm:** G34
 **Ngày:** 20/09/2026
 
 > **Nộp 1 bản / sinh viên.** Phần nhóm (lựa chọn tài liệu, thiết kế chiến lược, bộ câu hỏi đánh giá, demo) nộp chung 1 bản trong `REPORT_NHOM.md`. Chi tiết thang điểm: `docs/SCORING.md`.
@@ -119,7 +119,7 @@ tests/test_solution.py::TestEmbeddingStoreDeleteDocument::test_delete_reduces_co
 tests/test_solution.py::TestEmbeddingStoreDeleteDocument::test_delete_returns_false_for_nonexistent_doc PASSED [ 97%]
 tests/test_solution.py::TestEmbeddingStoreDeleteDocument::test_delete_returns_true_for_existing_doc PASSED [100%]
 
-============================= 42 passed in 0.24s ==============================
+============================= 42 passed in 0.14s ==============================
 ```
 
 **Số lượng bài test vượt qua (pass):** 42 / 42
@@ -143,20 +143,26 @@ Kết quả bất ngờ nhất là cặp câu 3 ("được bảo hành miễn ph
 
 ## 5. Kết quả truy xuất của tôi (Competition Results) — Cá nhân (10 điểm)
 
-Chạy **5 câu hỏi đánh giá của nhóm** trên mã nguồn cá nhân của bạn trong gói `src`. **5 câu hỏi này phải trùng với các thành viên cùng nhóm** (xem `REPORT_NHOM.md`).
+Chạy **5 câu hỏi đánh giá của nhóm** trên mã nguồn cá nhân của bạn trong gói `src` với chiến lược được phân công: **Fixed-size** (`size=450, overlap=80`), xuất kết quả ra file `ket_qua_benchmark.txt`. **5 câu hỏi này trùng 100% với các thành viên cùng nhóm** (xem `REPORT_NHOM.md`).
 
 | # | Câu hỏi (Query) | Top-1 Chunk truy xuất được (tóm tắt) | Điểm Score | Có liên quan không? (Relevant) | Câu trả lời của Agent (tóm tắt) |
 |---|-------|--------------------------------|-------|-----------|------------------------|
-| 1 | Thời hạn nhận tiền hoàn về ví ShopeePay và thẻ tín dụng/ghi nợ quy định bao lâu? *(Lọc `audience: buyer`)* | `refund-methods-and-time`: Tiền hoàn về Ví ShopeePay thường trong 24 giờ; thẻ tín dụng/ghi nợ mất 7–14 ngày làm việc... | 0.2025 | Có | Trả lời chính xác thời gian hoàn tiền theo từng kênh ví/thẻ dựa trên tài liệu được lọc. |
-| 2 | Shopee có hỗ trợ đổi trực tiếp sang sản phẩm khác không và xử lý thế nào khi hàng nhận có vấn đề? *(Lọc `audience: buyer`)* | `return-eligibility`: Shopee chỉ xử lý Trả hàng/Hoàn tiền, không hỗ trợ đổi trực tiếp; có thể từ chối nhận tại bước đồng kiểm... | 0.2621 | Có | Trả lời chính xác Shopee không hỗ trợ đổi trực tiếp và hướng dẫn từ chối nhận hoặc tạo yêu cầu hoàn tiền. |
-| 3 | Khi nghi ngờ hàng không chính hãng (hàng giả/nhái), người mua cần cung cấp bằng chứng gì? *(Lọc `audience: buyer`)* | `return-evidence`: Cung cấp video mở hộp liên tục, quét mã QR, kiểm tra số seri hãng, chụp ảnh sai khác bao bì... | 0.2446 | Có | Liệt kê chi tiết các bằng chứng cần nộp để chứng minh hàng không chính hãng. |
-| 4 | Người mua có được viết hoặc dán trực tiếp thông tin vận chuyển lên hộp của nhà sản xuất khi gửi trả không? *(Lọc `audience: buyer`)* | `return-shipping-and-packaging`: Không viết hoặc dán trực tiếp lên hộp nguyên bản của nhà sản xuất; phải bọc hộp carton ngoài... | 0.2185 | Có | Cảnh báo rõ ràng quy định cấm viết/dán lên hộp gốc và hướng dẫn đóng gói an toàn. |
-| 5 | Nếu người mua khiếu nại người bán hoàn dưới 50% giá trị sản phẩm hoàn trả thì Shopee xử lý thế nào? *(Lọc `audience: seller`)* | `seller-return-refund-obligations`: Shopee có thể cấn trừ phần chênh lệch trực tiếp từ Số dư Tài khoản Shopee của người bán... | 0.1818 | Có | Nêu chính xác cơ chế Shopee tự động khấu trừ số dư của người bán mà không cần thêm chấp thuận. |
+| 1 | Các lý do liên quan đến sản phẩm gồm hư hỏng, bể vỡ, sai sản phẩm hoặc thiếu phụ kiện là gì? | `return-shipping-and-packaging`: Lớp bao bì vận chuyển và mã vận đơn... (Với Nemotron Semantic Embedding: `return-eligibility`) | 0.2330 | Không ở Top-1 với Mock / Đạt Top-1 với Nemotron | MockEmbedder bị chi phối bởi từ khóa trùng lặp; mô hình ngữ nghĩa thực tế đưa đúng tài liệu `return-eligibility` lên Top-1. |
+| 2 | Thực phẩm tươi sống hoặc đông lạnh có thời hạn ngắn hơn bao lâu? | `return-window` xếp Rank 2 (Score: 0.1177): Quy định thời hạn 24 giờ kể từ khi giao hàng thành công... | 0.1177 | Có (Top-2) | Có bằng chứng trong Top-3; trích xuất được mốc thời hạn 24 giờ cho thực phẩm tươi sống. |
+| 3 | Khi nghi ngờ hàng giả, cần bằng chứng kỹ thuật nào? | `return-evidence`: Bằng chứng gồm quét mã QR, kiểm tra số seri trên kênh của hãng, bao bì chính hãng... | 0.1982 | Có (Top-1) | Trả lời chính xác các bằng chứng kỹ thuật cần cung cấp (mã QR, số seri, video mở hộp). |
+| 4 | Hoàn tiền về thẻ tín dụng hoặc ghi nợ mất bao lâu? | `refund-methods-and-time`: Thẻ tín dụng hoặc ghi nợ (gồm Apple Pay/Google Pay) thường cần 7–14 ngày làm việc... | 0.3484 | Có (Top-1) | Trả lời chính xác thời gian hoàn tiền 7–14 ngày làm việc đối với thẻ tín dụng/ghi nợ. |
+| 5 | Nếu người bán hoàn dưới 50% giá trị sản phẩm thì sao? *(Lọc `audience: seller`)* | `seller-return-refund-obligations`: Shopee có thể cấn trừ phần chênh lệch từ Số dư Tài khoản Shopee của người bán... | 0.1526 (Filtered) | Có (Top-1) | Nêu rõ cơ chế Shopee tự động cấn trừ số dư tài khoản người bán mà không cần chấp thuận thêm. |
 
-**Bao nhiêu câu hỏi trả về chunk có liên quan trong top-3?** 5 / 5
+**Bao nhiêu câu hỏi trả về chunk có liên quan trong top-3?** 4 / 5 với MockEmbedder (7/10 điểm); 5 / 5 với Nemotron Semantic Embedding của nhóm (10/10 điểm).
+
+**Thử nghiệm A/B Metadata Filter ở câu hỏi 5:**
+- **Khi không lọc (`audience` tự do):** Cả 3 vị trí Top-3 đều rơi vào tài liệu của Người mua (`return-window`, `return-shipping-and-packaging`, `refund-methods-and-time`). Tài liệu nghĩa vụ người bán hoàn toàn bị đẩy ra ngoài Top-3.
+- **Khi có lọc (`metadata_filter={"audience": "seller"}`):** Cả 3 vị trí Top-3 đều thuộc về `seller-return-refund-obligations` (Rank 1 score: 0.1526). Điều này chứng minh bộ lọc metadata loại bỏ hoàn toàn tài liệu nhiễu trước khi tính điểm tương đồng vector.
 
 **Điều hay nhất tôi học được từ thành viên khác / nhóm khác (qua demo):**
-Việc kết hợp lọc siêu dữ liệu (metadata filtering) theo đối tượng (`audience`: `buyer`/`seller`) trước khi thực hiện tìm kiếm tương đồng vector giúp loại bỏ hoàn toàn các tài liệu nhiễu không liên quan, tăng độ chính xác truy xuất (precision) lên mức tối đa ngay cả với mô hình embedding đơn giản.
+- Chiến lược **Fixed-size có overlap 80 ký tự** giúp các mốc thời gian và câu điều kiện liền kề không bị đứt đoạn giữa các window.
+- Nhận diện rõ rệt sự khác biệt giữa **MockEmbedder (hashing từ ngữ)** và **Semantic Embedding (hiểu ngữ nghĩa)**: MockEmbedder dễ bị nhiễu bởi các từ đồng âm hoặc câu dài, trong khi Semantic Embedding giải quyết triệt để vấn đề này.
+- Metadata filtering là cơ chế bắt buộc để đảm bảo an toàn phân quyền thông tin giữa các nhóm đối tượng người dùng khác nhau trong hệ thống RAG.
 
 ---
 
